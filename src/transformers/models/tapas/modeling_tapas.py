@@ -180,6 +180,10 @@ def load_tf_weights_in_tapas(model, config, tf_checkpoint_path):
         ):
             logger.info(f"Skipping {'/'.join(name)}")
             continue
+        if isinstance(model, TapasForScoredQA):
+            if any(n in ["output_bias", "output_weights"] for n in name):
+                logger.info(f"Skipping {'/'.join(name)}")
+                continue
         # in case the model is TapasForSequenceClassification, we skip output_bias and output_weights
         # since these are not used for classification
         if isinstance(model, TapasForSequenceClassification):
@@ -1456,6 +1460,29 @@ class TapasForQuestionAnswering(TapasPreTrainedModel):
             hidden_states=outputs.hidden_states,
             attentions=outputs.attentions,
         )
+
+
+class TapasForScoredQA(TapasPreTrainedModel):
+
+    def __init__(self, config):
+        super().__init__(config)
+
+        # base model
+        self.tapas = TapasModel(config)
+
+        # dropout (only used when training)
+        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+
+        # answer selection head
+        self.span_output_weights = nn.Parameter(torch.zeros(2*config.hidden_size))
+        self.span_output_bias = nn.Parameter(torch.zeros([]))
+
+        # table scoring head
+        self.classifier = nn.Linear(config.hidden_size, 2)
+
+        # Initialize weights and apply final processing
+        self.post_init()
+
 
 
 @add_start_docstrings(

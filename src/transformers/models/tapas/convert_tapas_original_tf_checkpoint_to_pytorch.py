@@ -27,6 +27,7 @@ from transformers import (
     load_tf_weights_in_tapas,
 )
 from transformers.utils import logging
+from transformers.models.tapas.modeling_tapas import TapasForScoredQA
 
 
 logging.set_verbosity_info()
@@ -81,6 +82,8 @@ def convert_tf_checkpoint_to_pytorch(
         model = TapasForMaskedLM(config=config)
     elif task == "INTERMEDIATE_PRETRAINING":
         model = TapasModel(config=config)
+    elif task == "SCORED_QA":
+        model = TapasForScoredQA(config=config)
     else:
         raise ValueError(f"Task {task} not supported.")
 
